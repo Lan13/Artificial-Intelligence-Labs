@@ -27,6 +27,22 @@ class BayesianNetwork:
         n_samples = len(labels)
         # TODO: calculate prior probability and conditional probability
         
+        # count each label
+        label_counts = np.bincount(labels) + 1
+        # calculate label prior probability
+        self.labels_prior = label_counts / (n_samples + self.n_labels)
+
+        # calculate conditional probability
+        for label in range(self.n_labels):
+            # label_pixels: (n_label_samples, n_pixels, )
+            label_pixels = pixels[labels == label]
+            for pixel in range(self.n_pixels):
+                # count each pixel status given label
+                label_pixel_status_counts = np.bincount(label_pixels[:, pixel], minlength=self.n_values) + 1
+                # get current label counts
+                current_label_counts = label_counts[label] + self.n_values
+                # calculate conditional probability
+                self.pixels_cond_label[pixel, :, label] = label_pixel_status_counts / current_label_counts
 
     # predict the labels for new data
     def predict(self, pixels):
@@ -37,7 +53,12 @@ class BayesianNetwork:
         n_samples = len(pixels)
         labels = np.zeros(n_samples)
         # TODO: predict for new data
-
+        for i in range(n_samples):
+            prob1 = np.log(self.labels_prior)
+            prob2 = np.sum(np.log(self.pixels_cond_label[np.arange(self.n_pixels), pixels[i]]), axis=0)
+            pixel_prob = prob1 + prob2
+            labels[i] = np.argmax(pixel_prob)
+        
         return labels
     
 

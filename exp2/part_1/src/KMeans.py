@@ -41,7 +41,11 @@ class KMeans:
         labels = np.zeros(n_samples)
         # TODO: Compute the distance between each point and each center
         # and Assign each point to the closest center
-
+        for i in range(n_samples):
+            # calculate the distance between each point and each center
+            distances = np.linalg.norm(points[i] - centers, axis=1)
+            # assign each point to the closest center
+            labels[i] = np.argmin(distances)
         return labels
     
 
@@ -54,7 +58,9 @@ class KMeans:
         return centers: (n_clusters, n_dims,)
         '''
         # TODO: Update the centers based on the new assignment of points
-
+        for k in range(self.k):
+            cluster_points = points[labels == k]
+            centers[k] = cluster_points.mean(axis=0)
         return centers
     
 
@@ -65,7 +71,17 @@ class KMeans:
         return centers: (n_clusters, n_dims,)
         '''
         # TODO: Implement k-means clustering
-        pass
+        centers = self.initialize_centers(points)
+
+        for _ in range(self.max_iter):
+            labels = self.assign_points(centers, points)
+            new_centers = self.update_centers(centers, labels, points)
+            
+            # If the centers did not change, stop iterating
+            if np.all(centers == new_centers):
+                break
+            centers = new_centers
+        return centers
         
 
     def compress(self, img):
@@ -77,16 +93,25 @@ class KMeans:
         points = img.reshape((-1, img.shape[-1]))
         # TODO: fit the points and 
         # Replace each pixel value with its nearby center value
-        pass
+        centers = self.fit(points)
+        
+        # Assign each point to the closest center
+        labels = self.assign_points(centers, points)
+        
+        # Replace each pixel value with its nearby center value
+        compressed_points = centers[labels.astype(int)]
+        compressed_img = compressed_points.reshape(img.shape)
+        
+        return compressed_img
 
 
 if __name__ == '__main__':
     img = read_image(filepath='../data/ustc-cow.png')
-    kmeans = KMeans(k=8, max_iter=10)
+    kmeans = KMeans(k=32, max_iter=10)
     compressed_img = kmeans.compress(img).round().astype(np.uint8)
     
     plt.figure(figsize=(10, 10))
     plt.imshow(compressed_img)
-    plt.title('Compressed Image')
+    plt.title('Compressed Image (k=32)    by PB20111689')
     plt.axis('off')
-    plt.savefig('./compressed_image.png')
+    plt.savefig('./compressed_image32.png')
